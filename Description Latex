@@ -1,0 +1,13 @@
+\begin{itemize} \scriptsize
+
+\item Objective: Decarolis investigates how insurers may manipulate the Medicare Part D subsidy design, particularly affecting low-income enrollees.
+
+\item Methodology & Instrument: The Medicare Advantage Prescription Drug (MA-PD) share in 2006 is used as an instrument
+
+\item Reason: The 2009 reform occurred on a national basis, and the asymmetric penetration of MA-PDs in 2006 is mostly driven by different evolutions of Medicare C mandates across states, making it reasonable to argue that the MA-PD penetration in 2006 is exogenously determined relative to the main relationship under study​​.
+
+\item Data: The analysis utilizes a comprehensive dataset covering all insurance plans offered between 2006 and 2011, aggregated at both plan and market levels. The study distinguishes between basic and enhanced plans, considering the geographic regions divided by CMS, and focuses on the pricing strategies insurers employ to attract low-income enrollees, who receive additional subsidies.
+
+\item Results: The results of Francesco Decarolis' study on Medicare Part D highlight the manipulative behaviors of insurers in response to the subsidy design for low-income enrollees. The instrumental variable (IV) estimates show that premiums tend to grow faster in regions where the Low-Income Subsidy (LIS) is more susceptible to manipulation.
+
+\end{itemize}
