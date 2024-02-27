@@ -3,7 +3,7 @@
 <head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>IVMedicareReplication</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>IVMedicareReplication (1)</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 
 
 
@@ -14578,7 +14578,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">pip</span> install statsmodels
@@ -14593,101 +14593,45 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="k">as</span> <span class="nn">sm</span>
 <span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
 <span class="kn">from</span> <span class="nn">statsmodels.iolib.summary2</span> <span class="kn">import</span> <span class="n">summary_col</span>
+<span class="kn">from</span> <span class="nn">linearmodels.panel</span> <span class="kn">import</span> <span class="n">PanelOLS</span>
 
 <span class="c1"># Load the dataset</span>
-<span class="n">file_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'C:\Users\Davis\Downloads\paper.dta'</span>
+<span class="n">file_path</span> <span class="o">=</span> <span class="s1">'dataset.dta'</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_stata</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
 
+<span class="c1"># Assuming 'regionid' is your panel identifier and 'year' represents time</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">'regionid'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">])</span>
 
-<span class="c1"># Assuming 'df' is your DataFrame loaded with the necessary data</span>
+<span class="c1"># Defining control variables for each model</span>
+<span class="n">controls_1</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'conc_weig_basicpdpd_c4'</span><span class="p">]</span>
+<span class="n">controls_2</span> <span class="o">=</span> <span class="n">controls_1</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'ttrend</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">35</span><span class="p">)]</span>
+<span class="n">controls_3</span> <span class="o">=</span> <span class="n">controls_1</span> <span class="o">+</span> <span class="p">[</span><span class="s1">'laghershf_firm_tot'</span><span class="p">,</span> <span class="s1">'lagunemploymentrate'</span><span class="p">]</span>
+<span class="n">controls_4</span> <span class="o">=</span> <span class="n">controls_3</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'ttrend</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">35</span><span class="p">)]</span>
+<span class="n">controls_5</span> <span class="o">=</span> <span class="n">controls_3</span> <span class="o">+</span> <span class="p">[</span><span class="s1">'mean_weig_reg_vintage'</span><span class="p">,</span> <span class="s1">'mean_weig_reg_pharmacies'</span><span class="p">,</span> <span class="s1">'mean_weig_reg_drugs'</span><span class="p">]</span>
+<span class="n">controls_6</span> <span class="o">=</span> <span class="n">controls_5</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'ttrend</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">35</span><span class="p">)]</span>
 
-<span class="c1"># Part I: Generate market shares and C4 for LIS Weights for BASIC PDP</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'true_weight_check_cw2'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">df</span><span class="p">[</span><span class="s1">'pdp'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'basic'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">),</span> <span class="n">df</span><span class="p">[</span><span class="s1">'true_weight_check_cw'</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-<span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s1">'true_weight_check_cw2'</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'idd'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'new_id1'</span><span class="p">)</span><span class="o">.</span><span class="n">cumcount</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="c1"># Defining outcome variable</span>
+<span class="n">outcome</span> <span class="o">=</span> <span class="s1">'logmean_w_reg_bpr_ch'</span>
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
-    <span class="n">df</span><span class="p">[</span><span class="sa">f</span><span class="s1">'C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">_plan_weight2'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'new_id1'</span><span class="p">)[</span><span class="s1">'idd'</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">==</span> <span class="n">i</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-    <span class="n">df</span><span class="p">[</span><span class="sa">f</span><span class="s1">'C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">_weight2'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'true_weight_check_cw2'</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="sa">f</span><span class="s1">'C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">_plan_weight2'</span><span class="p">]</span>
+<span class="c1"># Running OLS regressions for each set of controls</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">controls</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="n">controls_1</span><span class="p">,</span> <span class="n">controls_2</span><span class="p">,</span> <span class="n">controls_3</span><span class="p">,</span> <span class="n">controls_4</span><span class="p">,</span> <span class="n">controls_5</span><span class="p">,</span> <span class="n">controls_6</span><span class="p">],</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">add_constant</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">controls</span><span class="p">])</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">outcome</span><span class="p">]</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">PanelOLS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">entity_effects</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">time_effects</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop_absorbed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">'clustered'</span><span class="p">,</span> <span class="n">cluster_entity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Results for Model </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">:'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
-<span class="n">df</span><span class="p">[</span><span class="s1">'conc_weig_basicpdpd_c4'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="sa">f</span><span class="s1">'C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">_weight2'</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'idd'</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">_weight2'</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">_plan_weight2'</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="c1"># Part II: Controls - Generate HHI by Firm</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'enrol_tot_share'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">df</span><span class="p">[</span><span class="s1">'enrol_tot_num'</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'enrol_tot_num'</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'enrol_tot_denominator'</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'enrol_tot_denominator'</span><span class="p">]),</span>
-                                 <span class="n">df</span><span class="p">[</span><span class="s1">'enrol_tot_num'</span><span class="p">]</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s1">'enrol_tot_denominator'</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'firm_tot_share'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">'new_id1'</span><span class="p">,</span> <span class="s1">'Parent_Organization'</span><span class="p">])[</span><span class="s1">'enrol_tot_share'</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s1">'sum'</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'iddd'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">'new_id1'</span><span class="p">,</span> <span class="s1">'Parent_Organization'</span><span class="p">])</span><span class="o">.</span><span class="n">cumcount</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'temp2'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'new_id1'</span><span class="p">)[</span><span class="s1">'iddd'</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s1">'min'</span><span class="p">)</span> <span class="o">==</span> <span class="n">df</span><span class="p">[</span><span class="s1">'iddd'</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'num_firms'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'new_id1'</span><span class="p">)[</span><span class="s1">'temp2'</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s1">'sum'</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'firm_tot_share2'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'temp2'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s1">'firm_tot_share'</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'hershf_firm_tot'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'new_id1'</span><span class="p">)[</span><span class="s1">'firm_tot_share2'</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">((</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s1">'num_firms'</span><span class="p">]))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s1">'num_firms'</span><span class="p">])))</span>
-<span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'iddd'</span><span class="p">,</span> <span class="s1">'temp2'</span><span class="p">,</span> <span class="s1">'firm_tot_share2'</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="c1"># Get the sample right before proceeding</span>
-<span class="n">df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">'regionid'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">],</span> <span class="n">keep</span><span class="o">=</span><span class="s1">'last'</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s1">'regionid'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="c1"># Part III: Dependent Variable and Other Covariates</span>
-<span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s1">'regionid'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'logmean_w_reg_bpr'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'mean_w_reg_basprem'</span><span class="p">])</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'logmean_w_reg_bpr_ch'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'regionid'</span><span class="p">)[</span><span class="s1">'logmean_w_reg_bpr'</span><span class="p">]</span><span class="o">.</span><span class="n">diff</span><span class="p">()</span>
-
-<span class="n">df</span><span class="p">[</span><span class="s1">'change'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'year'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2008</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'laghershf_firm_tot'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'regionid'</span><span class="p">)[</span><span class="s1">'hershf_firm_tot'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'lagunemploymentrate'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'regionid'</span><span class="p">)[</span><span class="s1">'unemploymentrate'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="c1"># Dropping year == 2006 for regression analysis</span>
-<span class="n">df_filtered</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">'year'</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2006</span><span class="p">]</span>
-
-
-<span class="c1"># Generate a binary variable for year 2009</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'year2009'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'year'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2008</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-<span class="c1"># Create interaction term for year2009 and mapd_regio_2006share</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'regio_2006share2'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">'mapd_regio_2006share'</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">'year2009'</span><span class="p">]</span>
-
-<span class="c1"># Compute the change in the log of mean weighted reg bpr</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'logmean_w_reg_bpr'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'mean_w_reg_basprem'</span><span class="p">])</span>
-<span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s1">'regionid'</span><span class="p">,</span> <span class="s1">'year'</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'logmean_w_reg_bpr_ch'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'regionid'</span><span class="p">)[</span><span class="s1">'logmean_w_reg_bpr'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s1">'logmean_w_reg_bpr'</span><span class="p">]</span>
-
-<span class="c1"># Add lagged variables</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'laghershf_firm_tot'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'regionid'</span><span class="p">)[</span><span class="s1">'hershf_firm_tot'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">'lagunemploymentrate'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'regionid'</span><span class="p">)[</span><span class="s1">'unemploymentrate'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">run_regression</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">dependent</span><span class="p">,</span> <span class="n">independent</span><span class="p">,</span> <span class="n">controls</span><span class="p">,</span> <span class="n">interaction_terms</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">formula</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dependent</span><span class="si">}</span><span class="s2"> ~ </span><span class="si">{</span><span class="s1">' + '</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">independent</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">controls</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-    <span class="k">if</span> <span class="n">interaction_terms</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">interaction_terms</span><span class="p">:</span>
-            <span class="n">formula</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" * </span><span class="si">{</span><span class="n">term</span><span class="si">}</span><span class="s2">"</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">'cluster'</span><span class="p">,</span> <span class="n">cov_kwds</span><span class="o">=</span><span class="p">{</span><span class="s1">'groups'</span><span class="p">:</span> <span class="n">df</span><span class="p">[</span><span class="s1">'regionid'</span><span class="p">]})</span>
-    <span class="k">return</span> <span class="n">model</span>
-
-<span class="c1"># Example controls from the Stata code (simplified for demonstration)</span>
-<span class="n">control_sets</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">[</span><span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ttrend</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">35</span><span class="p">)],</span>
-    <span class="p">[</span><span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">,</span> <span class="s2">"laghershf_firm_tot"</span><span class="p">,</span> <span class="s2">"lagunemploymentrate"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">,</span> <span class="s2">"laghershf_firm_tot"</span><span class="p">,</span> <span class="s2">"lagunemploymentrate"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ttrend</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">35</span><span class="p">)],</span>
-    <span class="p">[</span><span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">,</span> <span class="s2">"laghershf_firm_tot"</span><span class="p">,</span>  <span class="s2">"lagunemploymentrate"</span><span class="p">,</span> <span class="s2">"mean_weig_reg_vintage"</span> <span class="s2">"mean_weig_reg_pharmacies"</span><span class="p">,</span> <span class="s2">"mean_weig_reg_drugs"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">,</span> <span class="s2">"laghershf_firm_tot"</span><span class="p">,</span>  <span class="s2">"lagunemploymentrate"</span><span class="p">,</span> <span class="s2">"mean_weig_reg_vintage"</span> <span class="s2">"mean_weig_reg_pharmacies"</span><span class="p">,</span> <span class="s2">"mean_weig_reg_drugs"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ttrend</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">35</span><span class="p">)]</span>
-<span class="p">]</span>
-
-<span class="c1"># Run regressions for each set of controls and print summaries</span>
-<span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">controls</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">control_sets</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">run_regression</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">"logmean_w_reg_bpr_ch"</span><span class="p">,</span> <span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">,</span> <span class="n">controls</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Model </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2"> Summary:</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">(),</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">run_iv_regression</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">dependent</span><span class="p">,</span> <span class="n">endog</span><span class="p">,</span> <span class="n">exog</span><span class="p">,</span> <span class="n">instrument</span><span class="p">):</span>
-    <span class="n">iv_formula</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dependent</span><span class="si">}</span><span class="s2"> ~ 1 + </span><span class="si">{</span><span class="n">exog</span><span class="si">}</span><span class="s2"> + [</span><span class="si">{</span><span class="n">endog</span><span class="si">}</span><span class="s2"> ~ </span><span class="si">{</span><span class="n">instrument</span><span class="si">}</span><span class="s2">]"</span>
-    <span class="n">iv_model</span> <span class="o">=</span> <span class="n">IV2SLS</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span><span class="n">iv_formula</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">'clustered'</span><span class="p">,</span> <span class="n">clusters</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s1">'regionid'</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">iv_model</span>
-
-<span class="c1"># Example IV regression with specified controls</span>
-<span class="n">iv_controls</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"laghershf_firm_tot"</span><span class="p">,</span> <span class="s2">"lagunemploymentrate"</span><span class="p">]</span>  <span class="c1"># Simplified for demonstration</span>
-<span class="n">iv_model</span> <span class="o">=</span> <span class="n">run_iv_regression</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">"logmean_w_reg_bpr_ch"</span><span class="p">,</span> <span class="s2">"conc_weig_basicpdpd_c4"</span><span class="p">,</span> <span class="s2">" + "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">iv_controls</span><span class="p">),</span> <span class="s2">"regio_2006share2"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"IV Model Summary:</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">iv_model</span><span class="o">.</span><span class="n">summary</span><span class="p">)</span>
+<span class="c1"># For 2SLS, using 'conc_weig_basicpdpd_c4' as an instrument for itself might not be accurate</span>
+<span class="c1"># Just demonstrating how you could potentially do it</span>
+<span class="c1"># Running OLS regressions for each set of controls</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">controls</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="n">controls_1</span><span class="p">,</span> <span class="n">controls_2</span><span class="p">,</span> <span class="n">controls_3</span><span class="p">,</span> <span class="n">controls_4</span><span class="p">,</span> <span class="n">controls_5</span><span class="p">,</span> <span class="n">controls_6</span><span class="p">],</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">add_constant</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">controls</span><span class="p">])</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">outcome</span><span class="p">]</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">PanelOLS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">entity_effects</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">time_effects</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop_absorbed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">'clustered'</span><span class="p">,</span> <span class="n">cluster_entity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Results for Model </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">:'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -14709,7 +14653,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Requirement already satisfied: statsmodels in c:\python311\lib\site-packages (0.14.1)
+<pre>Note: you may need to restart the kernel to use updated packages.Requirement already satisfied: statsmodels in c:\python311\lib\site-packages (0.14.1)
 Requirement already satisfied: numpy&lt;2,&gt;=1.18 in c:\python311\lib\site-packages (from statsmodels) (1.26.2)
 Requirement already satisfied: scipy!=1.9.2,&gt;=1.4 in c:\python311\lib\site-packages (from statsmodels) (1.11.3)
 Requirement already satisfied: pandas!=2.1.0,&gt;=1.0 in c:\python311\lib\site-packages (from statsmodels) (2.1.3)
@@ -14719,7 +14663,7 @@ Requirement already satisfied: python-dateutil&gt;=2.8.2 in c:\users\davis\appda
 Requirement already satisfied: pytz&gt;=2020.1 in c:\python311\lib\site-packages (from pandas!=2.1.0,&gt;=1.0-&gt;statsmodels) (2023.3.post1)
 Requirement already satisfied: tzdata&gt;=2022.1 in c:\python311\lib\site-packages (from pandas!=2.1.0,&gt;=1.0-&gt;statsmodels) (2023.3)
 Requirement already satisfied: six in c:\users\davis\appdata\roaming\python\python311\site-packages (from patsy&gt;=0.5.4-&gt;statsmodels) (1.16.0)
-Note: you may need to restart the kernel to use updated packages.
+
 </pre>
 </div>
 </div>
@@ -14737,6 +14681,12 @@ Note: you may need to restart the kernel to use updated packages.
 
 [notice] A new release of pip available: 22.3.1 -&gt; 24.0
 [notice] To update, run: python.exe -m pip install --upgrade pip
+C:\Users\Davis\AppData\Local\Temp\ipykernel_11192\1778736735.py:38: AbsorbingEffectWarning: 
+Variables have been fully absorbed and have removed from the regression:
+
+ttrend34
+
+  results = model.fit(cov_type=&#39;clustered&#39;, cluster_entity=True)
 </pre>
 </div>
 </div>
@@ -14748,8 +14698,7 @@ Note: you may need to restart the kernel to use updated packages.
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Requirement already satisfied: linearmodels in c:\python311\lib\site-packages (5.4)Note: you may need to restart the kernel to use updated packages.
-
+<pre>Requirement already satisfied: linearmodels in c:\python311\lib\site-packages (5.4)
 Requirement already satisfied: numpy&gt;=1.22.0 in c:\python311\lib\site-packages (from linearmodels) (1.26.2)
 Requirement already satisfied: pandas&gt;=1.3.0 in c:\python311\lib\site-packages (from linearmodels) (2.1.3)
 Requirement already satisfied: scipy&gt;=1.5.0 in c:\python311\lib\site-packages (from linearmodels) (1.11.3)
@@ -14769,6 +14718,247 @@ Requirement already satisfied: packaging&gt;=20 in c:\users\davis\appdata\roamin
 Requirement already satisfied: setuptools in c:\python311\lib\site-packages (from setuptools-scm[toml]&lt;9.0.0,&gt;=8.0.0-&gt;linearmodels) (65.5.0)
 Requirement already satisfied: patsy&gt;=0.5.4 in c:\python311\lib\site-packages (from statsmodels&gt;=0.12.0-&gt;linearmodels) (0.5.6)
 Requirement already satisfied: six in c:\users\davis\appdata\roaming\python\python311\site-packages (from patsy&gt;=0.5.4-&gt;statsmodels&gt;=0.12.0-&gt;linearmodels) (1.16.0)
+Note: you may need to restart the kernel to use updated packages.
+Results for Model 1:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.0710
+Estimator:                     PanelOLS   R-squared (Between):             -0.4908
+No. Observations:                   170   R-squared (Within):              -0.4241
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -0.4311
+Time:                          05:07:31   Log-likelihood                    235.43
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      10.007
+Entities:                            34   P-value                           0.0019
+Avg Obs:                         5.0000   Distribution:                   F(1,131)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):             22.049
+                                          P-value                           0.0000
+Time periods:                         5   Distribution:                   F(1,131)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.0554     0.0242    -2.2869     0.0238     -0.1033     -0.0075
+conc_weig_basicpdpd_c4     0.2741     0.0584     4.6956     0.0000      0.1587      0.3896
+==========================================================================================
+
+F-test for Poolability: 3.0331
+P-value: 0.0000
+Distribution: F(37,131)
+
+Included effects: Entity, Time
+Results for Model 2:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.3606
+Estimator:                     PanelOLS   R-squared (Between):             -14.222
+No. Observations:                   170   R-squared (Within):              -2.2388
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -3.4977
+Time:                          05:07:31   Log-likelihood                    267.19
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      1.6254
+Entities:                            34   P-value                           0.0339
+Avg Obs:                         5.0000   Distribution:                   F(34,98)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):         -7.607e+17
+                                          P-value                           1.0000
+Time periods:                         5   Distribution:                   F(34,98)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.2343     0.0569    -4.1164     0.0001     -0.3472     -0.1213
+conc_weig_basicpdpd_c4     0.3007     0.1471     2.0437     0.0437      0.0087      0.5927
+ttrend1                    0.0334     0.0104     3.2191     0.0017      0.0128      0.0540
+ttrend2                    0.0276     0.0026     10.489     0.0000      0.0224      0.0329
+ttrend3                    0.0831     0.0033     25.343     0.0000      0.0766      0.0896
+ttrend4                    0.0275     0.0058     4.7484     0.0000      0.0160      0.0390
+ttrend5                    0.0436     0.0034     12.980     0.0000      0.0369      0.0503
+ttrend6                    0.0538     0.0024     22.034     0.0000      0.0489      0.0586
+ttrend7                    0.0316     0.0037     8.5841     0.0000      0.0243      0.0390
+ttrend8                    0.0286     0.0015     18.779     0.0000      0.0255      0.0316
+ttrend9                    0.0528     0.0057     9.3353     0.0000      0.0416      0.0640
+ttrend10                   0.0510     0.0016     31.934     0.0000      0.0478      0.0542
+ttrend11                   0.0449     0.0056     7.9394     0.0000      0.0336      0.0561
+ttrend12                   0.0444     0.0018     25.320     0.0000      0.0409      0.0479
+ttrend13                   0.0553     0.0023     24.191     0.0000      0.0508      0.0599
+ttrend14                   0.0131     0.0044     2.9573     0.0039      0.0043      0.0219
+ttrend15                   0.0214     0.0022     9.5951     0.0000      0.0170      0.0259
+ttrend16                   0.0167     0.0018     9.3923     0.0000      0.0131      0.0202
+ttrend17                   0.0311     0.0008     39.521     0.0000      0.0295      0.0327
+ttrend18                   0.0254     0.0060     4.2062     0.0001      0.0134      0.0373
+ttrend19                   0.0747     0.0044     16.931     0.0000      0.0659      0.0835
+ttrend20                   0.0421     0.0017     25.389     0.0000      0.0388      0.0454
+ttrend21                   0.0914     0.0014     65.397     0.0000      0.0886      0.0941
+ttrend22                   0.0659     0.0036     18.194     0.0000      0.0587      0.0731
+ttrend23                   0.0809     0.0008     103.06     0.0000      0.0794      0.0825
+ttrend24                   0.0446     0.0008     53.288     0.0000      0.0430      0.0463
+ttrend25                   0.0243     0.0005     48.476     0.0000      0.0233      0.0253
+ttrend26                   0.0307     0.0003     102.90     0.0000      0.0301      0.0313
+ttrend27                   0.0747     0.0036     20.519     0.0000      0.0675      0.0819
+ttrend28                   0.0282     0.0138     2.0411     0.0439      0.0008      0.0555
+ttrend29                   0.0490     0.0033     14.764     0.0000      0.0424      0.0556
+ttrend30                   0.0020     0.0028     0.7270     0.4690     -0.0035      0.0076
+ttrend31                   0.0021     0.0034     0.6209     0.5361     -0.0047      0.0090
+ttrend32                   0.0456     0.0046     9.8232     0.0000      0.0364      0.0549
+ttrend33                   0.0854     0.0090     9.5339     0.0000      0.0676      0.1032
+==========================================================================================
+
+F-test for Poolability: 3.5466
+P-value: 0.0000
+Distribution: F(37,98)
+
+Included effects: Entity, Time
+Results for Model 3:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.0792
+Estimator:                     PanelOLS   R-squared (Between):             -0.8777
+No. Observations:                   170   R-squared (Within):              -0.1017
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -0.1833
+Time:                          05:07:31   Log-likelihood                    236.19
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      3.6977
+Entities:                            34   P-value                           0.0136
+Avg Obs:                         5.0000   Distribution:                   F(3,129)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):             7.3947
+                                          P-value                           0.0001
+Time periods:                         5   Distribution:                   F(3,129)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.0242     0.0644    -0.3755     0.7079     -0.1516      0.1032
+conc_weig_basicpdpd_c4     0.2754     0.0738     3.7313     0.0003      0.1294      0.4215
+laghershf_firm_tot         0.1547     0.4638     0.3335     0.7393     -0.7630      1.0724
+lagunemploymentrate       -0.0077     0.0105    -0.7384     0.4616     -0.0284      0.0130
+==========================================================================================
+
+F-test for Poolability: 2.4601
+P-value: 0.0001
+Distribution: F(37,129)
+
+Included effects: Entity, Time
+Results for Model 4:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.3748
+Estimator:                     PanelOLS   R-squared (Between):             -16.229
+No. Observations:                   170   R-squared (Within):              -1.5770
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -3.1163
+Time:                          05:07:31   Log-likelihood                    269.10
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      1.5986
+Entities:                            34   P-value                           0.0369
+Avg Obs:                         5.0000   Distribution:                   F(36,96)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):          5.845e+14
+                                          P-value                           0.0000
+Time periods:                         5   Distribution:                   F(36,96)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.1851     0.1301    -1.4231     0.1579     -0.4433      0.0731
+conc_weig_basicpdpd_c4     0.3024     0.1537     1.9674     0.0520     -0.0027      0.6075
+laghershf_firm_tot         0.1871     0.5215     0.3588     0.7205     -0.8481      1.2224
+lagunemploymentrate       -0.0281     0.0261    -1.0759     0.2847     -0.0799      0.0237
+ttrend1                    0.0441     0.0176     2.5129     0.0136      0.0093      0.0790
+ttrend2                    0.0521     0.0222     2.3530     0.0207      0.0082      0.0961
+ttrend3                    0.1065     0.0211     5.0391     0.0000      0.0645      0.1484
+ttrend4                    0.0570     0.0287     1.9882     0.0496   9.084e-05      0.1140
+ttrend5                    0.0665     0.0204     3.2585     0.0015      0.0260      0.1071
+ttrend6                    0.0760     0.0212     3.5872     0.0005      0.0339      0.1180
+ttrend7                    0.0539     0.0200     2.7005     0.0082      0.0143      0.0935
+ttrend8                    0.0674     0.0360     1.8751     0.0638     -0.0039      0.1388
+ttrend9                    0.0874     0.0309     2.8282     0.0057      0.0261      0.1488
+ttrend10                   0.0854     0.0317     2.6941     0.0083      0.0225      0.1484
+ttrend11                   0.0989     0.0506     1.9543     0.0536     -0.0016      0.1994
+ttrend12                   0.0814     0.0334     2.4382     0.0166      0.0151      0.1476
+ttrend13                   0.0952     0.0358     2.6602     0.0092      0.0242      0.1663
+ttrend14                   0.0409     0.0266     1.5374     0.1275     -0.0119      0.0938
+ttrend15                   0.0534     0.0286     1.8644     0.0653     -0.0035      0.1102
+ttrend16                   0.0394     0.0209     1.8842     0.0626     -0.0021      0.0810
+ttrend17                   0.0667     0.0323     2.0680     0.0413      0.0027      0.1308
+ttrend18                   0.0544     0.0290     1.8753     0.0638     -0.0032      0.1120
+ttrend19                   0.0882     0.0167     5.2919     0.0000      0.0551      0.1212
+ttrend20                   0.0625     0.0192     3.2498     0.0016      0.0243      0.1006
+ttrend21                   0.1091     0.0170     6.4115     0.0000      0.0753      0.1429
+ttrend22                   0.0832     0.0160     5.2085     0.0000      0.0515      0.1148
+ttrend23                   0.0937     0.0126     7.4621     0.0000      0.0688      0.1186
+ttrend24                   0.0606     0.0174     3.4848     0.0007      0.0261      0.0951
+ttrend25                   0.0397     0.0188     2.1056     0.0378      0.0023      0.0771
+ttrend26                   0.0521     0.0200     2.6009     0.0108      0.0123      0.0918
+ttrend27                   0.1047     0.0291     3.6031     0.0005      0.0470      0.1624
+ttrend28                   0.0699     0.0434     1.6121     0.1102     -0.0162      0.1560
+ttrend29                   0.1095     0.0568     1.9294     0.0566     -0.0032      0.2221
+ttrend30                   0.0347     0.0304     1.1428     0.2560     -0.0256      0.0950
+ttrend31                   0.0382     0.0332     1.1520     0.2522     -0.0276      0.1041
+ttrend32                   0.0945     0.0456     2.0726     0.0409      0.0040      0.1850
+ttrend33                   0.1059     0.0258     4.1036     0.0001      0.0547      0.1571
+==========================================================================================
+
+F-test for Poolability: 2.3401
+P-value: 0.0005
+Distribution: F(37,96)
+
+Included effects: Entity, Time
+Results for Model 5:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.1001
+Estimator:                     PanelOLS   R-squared (Between):             -1.8759
+No. Observations:                   170   R-squared (Within):               0.1968
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -0.0209
+Time:                          05:07:31   Log-likelihood                    238.14
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      2.3365
+Entities:                            34   P-value                           0.0357
+Avg Obs:                         5.0000   Distribution:                   F(6,126)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):             5.4047
+                                          P-value                           0.0001
+Time periods:                         5   Distribution:                   F(6,126)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                    Parameter Estimates                                     
+============================================================================================
+                          Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+--------------------------------------------------------------------------------------------
+const                        0.4198     0.3846     1.0916     0.2771     -0.3413      1.1808
+conc_weig_basicpdpd_c4       0.3038     0.0756     4.0176     0.0001      0.1542      0.4534
+laghershf_firm_tot           0.0874     0.4654     0.1877     0.8514     -0.8337      1.0085
+lagunemploymentrate         -0.0072     0.0106    -0.6764     0.5000     -0.0281      0.0138
+mean_weig_reg_vintage       -0.0712     0.0658    -1.0823     0.2812     -0.2013      0.0590
+mean_weig_reg_pharmacies -1.754e-05     0.0001    -0.1352     0.8927     -0.0003      0.0002
+mean_weig_reg_drugs         -0.2920     0.3515    -0.8306     0.4078     -0.9876      0.4037
+============================================================================================
+
+F-test for Poolability: 2.0063
+P-value: 0.0024
+Distribution: F(37,126)
+
+Included effects: Entity, Time
 </pre>
 </div>
 </div>
@@ -14780,42 +14970,302 @@ Requirement already satisfied: six in c:\users\davis\appdata\roaming\python\pyth
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:22: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;true_weight_check_cw2&#39;] = np.where((df[&#39;pdp&#39;] == 1) &amp; (df[&#39;basic&#39;] == 1), df[&#39;true_weight_check_cw&#39;], np.nan)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:24: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;idd&#39;] = df.groupby(&#39;new_id1&#39;).cumcount() + 1
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:27: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_plan_weight2&#39;] = (df.groupby(&#39;new_id1&#39;)[&#39;idd&#39;].transform(lambda x: x == i)).astype(int)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:28: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_weight2&#39;] = df[&#39;true_weight_check_cw2&#39;] * df[f&#39;C{i}_plan_weight2&#39;]
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:27: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_plan_weight2&#39;] = (df.groupby(&#39;new_id1&#39;)[&#39;idd&#39;].transform(lambda x: x == i)).astype(int)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:28: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_weight2&#39;] = df[&#39;true_weight_check_cw2&#39;] * df[f&#39;C{i}_plan_weight2&#39;]
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:27: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_plan_weight2&#39;] = (df.groupby(&#39;new_id1&#39;)[&#39;idd&#39;].transform(lambda x: x == i)).astype(int)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:28: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_weight2&#39;] = df[&#39;true_weight_check_cw2&#39;] * df[f&#39;C{i}_plan_weight2&#39;]
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:27: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_plan_weight2&#39;] = (df.groupby(&#39;new_id1&#39;)[&#39;idd&#39;].transform(lambda x: x == i)).astype(int)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:28: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[f&#39;C{i}_weight2&#39;] = df[&#39;true_weight_check_cw2&#39;] * df[f&#39;C{i}_plan_weight2&#39;]
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:30: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;conc_weig_basicpdpd_c4&#39;] = sum(df[f&#39;C{i}_weight2&#39;] for i in range(1, 5))
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:34: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;enrol_tot_share&#39;] = np.where((df[&#39;enrol_tot_num&#39;] != 0) &amp; pd.notnull(df[&#39;enrol_tot_num&#39;]) &amp; (df[&#39;enrol_tot_denominator&#39;] != 0) &amp; pd.notnull(df[&#39;enrol_tot_denominator&#39;]),
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:36: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;firm_tot_share&#39;] = df.groupby([&#39;new_id1&#39;, &#39;Parent_Organization&#39;])[&#39;enrol_tot_share&#39;].transform(&#39;sum&#39;)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:37: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;iddd&#39;] = df.groupby([&#39;new_id1&#39;, &#39;Parent_Organization&#39;]).cumcount() + 1
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:38: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;temp2&#39;] = (df.groupby(&#39;new_id1&#39;)[&#39;iddd&#39;].transform(&#39;min&#39;) == df[&#39;iddd&#39;]).astype(int)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:39: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;num_firms&#39;] = df.groupby(&#39;new_id1&#39;)[&#39;temp2&#39;].transform(&#39;sum&#39;)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:40: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;firm_tot_share2&#39;] = np.where(df[&#39;temp2&#39;] == 1, df[&#39;firm_tot_share&#39;], np.nan)
-C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:41: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
-  df[&#39;hershf_firm_tot&#39;] = df.groupby(&#39;new_id1&#39;)[&#39;firm_tot_share2&#39;].transform(lambda x: ((x ** 2).sum() - (1 / df[&#39;num_firms&#39;])) / (1 - (1 / df[&#39;num_firms&#39;])))
+<pre>C:\Users\Davis\AppData\Local\Temp\ipykernel_11192\1778736735.py:38: AbsorbingEffectWarning: 
+Variables have been fully absorbed and have removed from the regression:
+
+ttrend34
+
+  results = model.fit(cov_type=&#39;clustered&#39;, cluster_entity=True)
+C:\Users\Davis\AppData\Local\Temp\ipykernel_11192\1778736735.py:38: AbsorbingEffectWarning: 
+Variables have been fully absorbed and have removed from the regression:
+
+ttrend34
+
+  results = model.fit(cov_type=&#39;clustered&#39;, cluster_entity=True)
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Results for Model 6:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.3910
+Estimator:                     PanelOLS   R-squared (Between):             -27.230
+No. Observations:                   170   R-squared (Within):              -0.1960
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -3.0361
+Time:                          05:07:31   Log-likelihood                    271.33
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      1.5312
+Entities:                            34   P-value                           0.0494
+Avg Obs:                         5.0000   Distribution:                   F(39,93)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):         -5.539e+15
+                                          P-value                           1.0000
+Time periods:                         5   Distribution:                   F(39,93)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                    Parameter Estimates                                     
+============================================================================================
+                          Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+--------------------------------------------------------------------------------------------
+const                        0.3448     0.5977     0.5769     0.5654     -0.8421      1.5317
+conc_weig_basicpdpd_c4       0.3519     0.1400     2.5131     0.0137      0.0738      0.6299
+laghershf_firm_tot          -0.0655     0.7224    -0.0907     0.9280     -1.5001      1.3691
+lagunemploymentrate         -0.0234     0.0243    -0.9639     0.3376     -0.0715      0.0248
+mean_weig_reg_vintage       -0.0545     0.1026    -0.5309     0.5967     -0.2582      0.1493
+mean_weig_reg_pharmacies    -0.0001     0.0002    -0.6425     0.5221     -0.0004      0.0002
+mean_weig_reg_drugs         -0.2927     0.4754    -0.6158     0.5396     -1.2368      0.6513
+ttrend1                      0.0451     0.0195     2.3136     0.0229      0.0064      0.0837
+ttrend2                      0.0471     0.0268     1.7562     0.0824     -0.0062      0.1005
+ttrend3                      0.0977     0.0236     4.1431     0.0001      0.0509      0.1446
+ttrend4                      0.0561     0.0307     1.8279     0.0708     -0.0048      0.1170
+ttrend5                      0.0676     0.0242     2.7972     0.0063      0.0196      0.1157
+ttrend6                      0.0671     0.0214     3.1378     0.0023      0.0246      0.1096
+ttrend7                      0.0440     0.0212     2.0744     0.0408      0.0019      0.0861
+ttrend8                      0.0593     0.0341     1.7389     0.0854     -0.0084      0.1270
+ttrend9                      0.0730     0.0316     2.3126     0.0229      0.0103      0.1357
+ttrend10                     0.0736     0.0287     2.5613     0.0120      0.0165      0.1306
+ttrend11                     0.0839     0.0485     1.7291     0.0871     -0.0124      0.1802
+ttrend12                     0.0638     0.0302     2.1149     0.0371      0.0039      0.1237
+ttrend13                     0.0863     0.0349     2.4741     0.0152      0.0170      0.1555
+ttrend14                     0.0312     0.0248     1.2586     0.2113     -0.0180      0.0805
+ttrend15                     0.0403     0.0258     1.5641     0.1212     -0.0109      0.0916
+ttrend16                     0.0270     0.0195     1.3820     0.1703     -0.0118      0.0658
+ttrend17                     0.0651     0.0339     1.9170     0.0583     -0.0023      0.1325
+ttrend18                     0.0416     0.0294     1.4167     0.1599     -0.0167      0.1000
+ttrend19                     0.0744     0.0239     3.1135     0.0025      0.0270      0.1219
+ttrend20                     0.0520     0.0219     2.3710     0.0198      0.0084      0.0955
+ttrend21                     0.1057     0.0207     5.1003     0.0000      0.0645      0.1468
+ttrend22                     0.0800     0.0231     3.4600     0.0008      0.0341      0.1258
+ttrend23                     0.0830     0.0162     5.1199     0.0000      0.0508      0.1152
+ttrend24                     0.0543     0.0237     2.2858     0.0245      0.0071      0.1014
+ttrend25                     0.0285     0.0234     1.2172     0.2266     -0.0180      0.0751
+ttrend26                     0.0521     0.0224     2.3295     0.0220      0.0077      0.0965
+ttrend27                     0.0932     0.0293     3.1762     0.0020      0.0349      0.1514
+ttrend28                     0.0499     0.0421     1.1856     0.2388     -0.0337      0.1334
+ttrend29                     0.1025     0.0531     1.9303     0.0566     -0.0029      0.2080
+ttrend30                     0.0189     0.0275     0.6889     0.4926     -0.0356      0.0735
+ttrend31                     0.0250     0.0352     0.7107     0.4790     -0.0449      0.0949
+ttrend32                     0.0730     0.0421     1.7317     0.0866     -0.0107      0.1566
+ttrend33                     0.0969     0.0276     3.5074     0.0007      0.0420      0.1517
+============================================================================================
+
+F-test for Poolability: 1.9337
+P-value: 0.0058
+Distribution: F(37,93)
+
+Included effects: Entity, Time
+Results for Model 1:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.0710
+Estimator:                     PanelOLS   R-squared (Between):             -0.4908
+No. Observations:                   170   R-squared (Within):              -0.4241
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -0.4311
+Time:                          05:07:31   Log-likelihood                    235.43
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      10.007
+Entities:                            34   P-value                           0.0019
+Avg Obs:                         5.0000   Distribution:                   F(1,131)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):             22.049
+                                          P-value                           0.0000
+Time periods:                         5   Distribution:                   F(1,131)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.0554     0.0242    -2.2869     0.0238     -0.1033     -0.0075
+conc_weig_basicpdpd_c4     0.2741     0.0584     4.6956     0.0000      0.1587      0.3896
+==========================================================================================
+
+F-test for Poolability: 3.0331
+P-value: 0.0000
+Distribution: F(37,131)
+
+Included effects: Entity, Time
+Results for Model 2:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.3606
+Estimator:                     PanelOLS   R-squared (Between):             -14.222
+No. Observations:                   170   R-squared (Within):              -2.2388
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -3.4977
+Time:                          05:07:31   Log-likelihood                    267.19
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      1.6254
+Entities:                            34   P-value                           0.0339
+Avg Obs:                         5.0000   Distribution:                   F(34,98)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):         -7.607e+17
+                                          P-value                           1.0000
+Time periods:                         5   Distribution:                   F(34,98)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.2343     0.0569    -4.1164     0.0001     -0.3472     -0.1213
+conc_weig_basicpdpd_c4     0.3007     0.1471     2.0437     0.0437      0.0087      0.5927
+ttrend1                    0.0334     0.0104     3.2191     0.0017      0.0128      0.0540
+ttrend2                    0.0276     0.0026     10.489     0.0000      0.0224      0.0329
+ttrend3                    0.0831     0.0033     25.343     0.0000      0.0766      0.0896
+ttrend4                    0.0275     0.0058     4.7484     0.0000      0.0160      0.0390
+ttrend5                    0.0436     0.0034     12.980     0.0000      0.0369      0.0503
+ttrend6                    0.0538     0.0024     22.034     0.0000      0.0489      0.0586
+ttrend7                    0.0316     0.0037     8.5841     0.0000      0.0243      0.0390
+ttrend8                    0.0286     0.0015     18.779     0.0000      0.0255      0.0316
+ttrend9                    0.0528     0.0057     9.3353     0.0000      0.0416      0.0640
+ttrend10                   0.0510     0.0016     31.934     0.0000      0.0478      0.0542
+ttrend11                   0.0449     0.0056     7.9394     0.0000      0.0336      0.0561
+ttrend12                   0.0444     0.0018     25.320     0.0000      0.0409      0.0479
+ttrend13                   0.0553     0.0023     24.191     0.0000      0.0508      0.0599
+ttrend14                   0.0131     0.0044     2.9573     0.0039      0.0043      0.0219
+ttrend15                   0.0214     0.0022     9.5951     0.0000      0.0170      0.0259
+ttrend16                   0.0167     0.0018     9.3923     0.0000      0.0131      0.0202
+ttrend17                   0.0311     0.0008     39.521     0.0000      0.0295      0.0327
+ttrend18                   0.0254     0.0060     4.2062     0.0001      0.0134      0.0373
+ttrend19                   0.0747     0.0044     16.931     0.0000      0.0659      0.0835
+ttrend20                   0.0421     0.0017     25.389     0.0000      0.0388      0.0454
+ttrend21                   0.0914     0.0014     65.397     0.0000      0.0886      0.0941
+ttrend22                   0.0659     0.0036     18.194     0.0000      0.0587      0.0731
+ttrend23                   0.0809     0.0008     103.06     0.0000      0.0794      0.0825
+ttrend24                   0.0446     0.0008     53.288     0.0000      0.0430      0.0463
+ttrend25                   0.0243     0.0005     48.476     0.0000      0.0233      0.0253
+ttrend26                   0.0307     0.0003     102.90     0.0000      0.0301      0.0313
+ttrend27                   0.0747     0.0036     20.519     0.0000      0.0675      0.0819
+ttrend28                   0.0282     0.0138     2.0411     0.0439      0.0008      0.0555
+ttrend29                   0.0490     0.0033     14.764     0.0000      0.0424      0.0556
+ttrend30                   0.0020     0.0028     0.7270     0.4690     -0.0035      0.0076
+ttrend31                   0.0021     0.0034     0.6209     0.5361     -0.0047      0.0090
+ttrend32                   0.0456     0.0046     9.8232     0.0000      0.0364      0.0549
+ttrend33                   0.0854     0.0090     9.5339     0.0000      0.0676      0.1032
+==========================================================================================
+
+F-test for Poolability: 3.5466
+P-value: 0.0000
+Distribution: F(37,98)
+
+Included effects: Entity, Time
+Results for Model 3:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.0792
+Estimator:                     PanelOLS   R-squared (Between):             -0.8777
+No. Observations:                   170   R-squared (Within):              -0.1017
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -0.1833
+Time:                          05:07:31   Log-likelihood                    236.19
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      3.6977
+Entities:                            34   P-value                           0.0136
+Avg Obs:                         5.0000   Distribution:                   F(3,129)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):             7.3947
+                                          P-value                           0.0001
+Time periods:                         5   Distribution:                   F(3,129)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.0242     0.0644    -0.3755     0.7079     -0.1516      0.1032
+conc_weig_basicpdpd_c4     0.2754     0.0738     3.7313     0.0003      0.1294      0.4215
+laghershf_firm_tot         0.1547     0.4638     0.3335     0.7393     -0.7630      1.0724
+lagunemploymentrate       -0.0077     0.0105    -0.7384     0.4616     -0.0284      0.0130
+==========================================================================================
+
+F-test for Poolability: 2.4601
+P-value: 0.0001
+Distribution: F(37,129)
+
+Included effects: Entity, Time
+Results for Model 4:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.3748
+Estimator:                     PanelOLS   R-squared (Between):             -16.229
+No. Observations:                   170   R-squared (Within):              -1.5770
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -3.1163
+Time:                          05:07:31   Log-likelihood                    269.10
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      1.5986
+Entities:                            34   P-value                           0.0369
+Avg Obs:                         5.0000   Distribution:                   F(36,96)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):          5.845e+14
+                                          P-value                           0.0000
+Time periods:                         5   Distribution:                   F(36,96)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                   Parameter Estimates                                    
+==========================================================================================
+                        Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------------------
+const                     -0.1851     0.1301    -1.4231     0.1579     -0.4433      0.0731
+conc_weig_basicpdpd_c4     0.3024     0.1537     1.9674     0.0520     -0.0027      0.6075
+laghershf_firm_tot         0.1871     0.5215     0.3588     0.7205     -0.8481      1.2224
+lagunemploymentrate       -0.0281     0.0261    -1.0759     0.2847     -0.0799      0.0237
+ttrend1                    0.0441     0.0176     2.5129     0.0136      0.0093      0.0790
+ttrend2                    0.0521     0.0222     2.3530     0.0207      0.0082      0.0961
+ttrend3                    0.1065     0.0211     5.0391     0.0000      0.0645      0.1484
+ttrend4                    0.0570     0.0287     1.9882     0.0496   9.084e-05      0.1140
+ttrend5                    0.0665     0.0204     3.2585     0.0015      0.0260      0.1071
+ttrend6                    0.0760     0.0212     3.5872     0.0005      0.0339      0.1180
+ttrend7                    0.0539     0.0200     2.7005     0.0082      0.0143      0.0935
+ttrend8                    0.0674     0.0360     1.8751     0.0638     -0.0039      0.1388
+ttrend9                    0.0874     0.0309     2.8282     0.0057      0.0261      0.1488
+ttrend10                   0.0854     0.0317     2.6941     0.0083      0.0225      0.1484
+ttrend11                   0.0989     0.0506     1.9543     0.0536     -0.0016      0.1994
+ttrend12                   0.0814     0.0334     2.4382     0.0166      0.0151      0.1476
+ttrend13                   0.0952     0.0358     2.6602     0.0092      0.0242      0.1663
+ttrend14                   0.0409     0.0266     1.5374     0.1275     -0.0119      0.0938
+ttrend15                   0.0534     0.0286     1.8644     0.0653     -0.0035      0.1102
+ttrend16                   0.0394     0.0209     1.8842     0.0626     -0.0021      0.0810
+ttrend17                   0.0667     0.0323     2.0680     0.0413      0.0027      0.1308
+ttrend18                   0.0544     0.0290     1.8753     0.0638     -0.0032      0.1120
+ttrend19                   0.0882     0.0167     5.2919     0.0000      0.0551      0.1212
+ttrend20                   0.0625     0.0192     3.2498     0.0016      0.0243      0.1006
+ttrend21                   0.1091     0.0170     6.4115     0.0000      0.0753      0.1429
+ttrend22                   0.0832     0.0160     5.2085     0.0000      0.0515      0.1148
+ttrend23                   0.0937     0.0126     7.4621     0.0000      0.0688      0.1186
+ttrend24                   0.0606     0.0174     3.4848     0.0007      0.0261      0.0951
+ttrend25                   0.0397     0.0188     2.1056     0.0378      0.0023      0.0771
+ttrend26                   0.0521     0.0200     2.6009     0.0108      0.0123      0.0918
+ttrend27                   0.1047     0.0291     3.6031     0.0005      0.0470      0.1624
+ttrend28                   0.0699     0.0434     1.6121     0.1102     -0.0162      0.1560
+ttrend29                   0.1095     0.0568     1.9294     0.0566     -0.0032      0.2221
+ttrend30                   0.0347     0.0304     1.1428     0.2560     -0.0256      0.0950
+ttrend31                   0.0382     0.0332     1.1520     0.2522     -0.0276      0.1041
+ttrend32                   0.0945     0.0456     2.0726     0.0409      0.0040      0.1850
+ttrend33                   0.1059     0.0258     4.1036     0.0001      0.0547      0.1571
+==========================================================================================
+
+F-test for Poolability: 2.3401
+P-value: 0.0005
+Distribution: F(37,96)
+
+Included effects: Entity, Time
 </pre>
 </div>
 </div>
@@ -14827,115 +15277,156 @@ C:\Users\Davis\AppData\Local\Temp\ipykernel_14668\371290269.py:41: PerformanceWa
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>
-<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
-<span class="ansi-red-intense-fg ansi-bold">ValueError</span>                                Traceback (most recent call last)
-Cell <span class="ansi-green-intense-fg ansi-bold">In[6], line 96</span>
-<span class="ansi-green-fg">     94</span> <span style="color: rgb(95,135,135)"># Run regressions for each set of controls and print summaries</span>
-<span class="ansi-green-fg">     95</span> <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> index, controls <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> <span style="color: rgb(0,135,0)">enumerate</span>(control_sets, start<span style="color: rgb(98,98,98)">=</span><span style="color: rgb(98,98,98)">1</span>):
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 96</span>     model <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">run_regression</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">df</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">logmean_w_reg_bpr_ch</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">conc_weig_basicpdpd_c4</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">controls</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">     97</span>     <span style="color: rgb(0,135,0)">print</span>(<span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">Model </span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>index<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)"> Summary:</span><span class="ansi-bold" style="color: rgb(175,95,0)">\n</span><span style="color: rgb(175,0,0)">&#34;</span>, model<span style="color: rgb(98,98,98)">.</span>summary(), <span style="color: rgb(175,0,0)">&#34;</span><span class="ansi-bold" style="color: rgb(175,95,0)">\n</span><span class="ansi-bold" style="color: rgb(175,95,0)">\n</span><span style="color: rgb(175,0,0)">&#34;</span>)
-<span class="ansi-green-fg">     99</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span> <span style="color: rgb(0,0,255)">run_iv_regression</span>(df, dependent, endog, exog, instrument):
+<pre>C:\Users\Davis\AppData\Local\Temp\ipykernel_11192\1778736735.py:49: AbsorbingEffectWarning: 
+Variables have been fully absorbed and have removed from the regression:
 
-Cell <span class="ansi-green-intense-fg ansi-bold">In[6], line 81</span>, in <span class="ansi-cyan-fg">run_regression</span><span class="ansi-blue-intense-fg ansi-bold">(df, dependent, independent, controls, interaction_terms)</span>
-<span class="ansi-green-fg">     79</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> term <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> interaction_terms:
-<span class="ansi-green-fg">     80</span>         formula <span style="color: rgb(98,98,98)">+</span><span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)"> * </span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>term<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)">&#34;</span>
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 81</span> model <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">smf</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">ols</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">formula</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">data</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">df</span><span class="ansi-yellow-bg">)</span><span style="color: rgb(98,98,98)">.</span>fit(cov_type<span style="color: rgb(98,98,98)">=</span><span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">cluster</span><span style="color: rgb(175,0,0)">&#39;</span>, cov_kwds<span style="color: rgb(98,98,98)">=</span>{<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">groups</span><span style="color: rgb(175,0,0)">&#39;</span>: df[<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">regionid</span><span style="color: rgb(175,0,0)">&#39;</span>]})
-<span class="ansi-green-fg">     82</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> model
+ttrend34
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\base\model.py:229</span>, in <span class="ansi-cyan-fg">Model.from_formula</span><span class="ansi-blue-intense-fg ansi-bold">(cls, formula, data, subset, drop_cols, *args, **kwargs)</span>
-<span class="ansi-green-fg">    223</span>         design_info <span style="color: rgb(98,98,98)">=</span> design_info<span style="color: rgb(98,98,98)">.</span>subset(cols)
-<span class="ansi-green-fg">    225</span> kwargs<span style="color: rgb(98,98,98)">.</span>update({<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">missing_idx</span><span style="color: rgb(175,0,0)">&#39;</span>: missing_idx,
-<span class="ansi-green-fg">    226</span>                <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">missing</span><span style="color: rgb(175,0,0)">&#39;</span>: missing,
-<span class="ansi-green-fg">    227</span>                <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">formula</span><span style="color: rgb(175,0,0)">&#39;</span>: formula,  <span style="color: rgb(95,135,135)"># attach formula for unpckling</span>
-<span class="ansi-green-fg">    228</span>                <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">design_info</span><span style="color: rgb(175,0,0)">&#39;</span>: design_info})
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 229</span> mod <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">cls</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">    230</span> mod<span style="color: rgb(98,98,98)">.</span>formula <span style="color: rgb(98,98,98)">=</span> formula
-<span class="ansi-green-fg">    231</span> <span style="color: rgb(95,135,135)"># since we got a dataframe, attach the original</span>
+  results = model.fit(cov_type=&#39;clustered&#39;, cluster_entity=True)
+C:\Users\Davis\AppData\Local\Temp\ipykernel_11192\1778736735.py:49: AbsorbingEffectWarning: 
+Variables have been fully absorbed and have removed from the regression:
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\regression\linear_model.py:923</span>, in <span class="ansi-cyan-fg">OLS.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, endog, exog, missing, hasconst, **kwargs)</span>
-<span class="ansi-green-fg">    920</span>     msg <span style="color: rgb(98,98,98)">=</span> (<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">Weights are not supported in OLS and will be ignored</span><span style="color: rgb(175,0,0)">&#34;</span>
-<span class="ansi-green-fg">    921</span>            <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">An exception will be raised in the next version.</span><span style="color: rgb(175,0,0)">&#34;</span>)
-<span class="ansi-green-fg">    922</span>     warnings<span style="color: rgb(98,98,98)">.</span>warn(msg, ValueWarning)
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 923</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">super</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">OLS</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg" style="color: rgb(0,0,255)">__init__</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg">,</span>
-<span class="ansi-green-fg">    924</span> <span class="ansi-yellow-bg">                          </span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">    925</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">weights</span><span style="color: rgb(175,0,0)">&#34;</span> <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_init_keys:
-<span class="ansi-green-fg">    926</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_init_keys<span style="color: rgb(98,98,98)">.</span>remove(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">weights</span><span style="color: rgb(175,0,0)">&#34;</span>)
+ttrend34
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\regression\linear_model.py:748</span>, in <span class="ansi-cyan-fg">WLS.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, endog, exog, weights, missing, hasconst, **kwargs)</span>
-<span class="ansi-green-fg">    746</span> <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
-<span class="ansi-green-fg">    747</span>     weights <span style="color: rgb(98,98,98)">=</span> weights<span style="color: rgb(98,98,98)">.</span>squeeze()
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 748</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">super</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">WLS</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg" style="color: rgb(0,0,255)">__init__</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg">,</span>
-<span class="ansi-green-fg">    749</span> <span class="ansi-yellow-bg">                          </span><span class="ansi-yellow-bg">weights</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">weights</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">    750</span> nobs <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>exog<span style="color: rgb(98,98,98)">.</span>shape[<span style="color: rgb(98,98,98)">0</span>]
-<span class="ansi-green-fg">    751</span> weights <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>weights
+  results = model.fit(cov_type=&#39;clustered&#39;, cluster_entity=True)
+</pre>
+</div>
+</div>
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\regression\linear_model.py:202</span>, in <span class="ansi-cyan-fg">RegressionModel.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, endog, exog, **kwargs)</span>
-<span class="ansi-green-fg">    201</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span> <span style="color: rgb(0,0,255)">__init__</span>(<span style="color: rgb(0,135,0)">self</span>, endog, exog, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs):
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 202</span>     <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">super</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">RegressionModel</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg" style="color: rgb(0,0,255)">__init__</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">    203</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>pinv_wexog: Float64Array <span style="color: rgb(98,98,98)">|</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span> <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>
-<span class="ansi-green-fg">    204</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_data_attr<span style="color: rgb(98,98,98)">.</span>extend([<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">pinv_wexog</span><span style="color: rgb(175,0,0)">&#39;</span>, <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">wendog</span><span style="color: rgb(175,0,0)">&#39;</span>, <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">wexog</span><span style="color: rgb(175,0,0)">&#39;</span>, <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">weights</span><span style="color: rgb(175,0,0)">&#39;</span>])
+<div class="jp-OutputArea-child">
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\base\model.py:270</span>, in <span class="ansi-cyan-fg">LikelihoodModel.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, endog, exog, **kwargs)</span>
-<span class="ansi-green-fg">    269</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span> <span style="color: rgb(0,0,255)">__init__</span>(<span style="color: rgb(0,135,0)">self</span>, endog, exog<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">None</span>, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs):
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 270</span>     <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">super</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg" style="color: rgb(0,0,255)">__init__</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">    271</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>initialize()
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\base\model.py:95</span>, in <span class="ansi-cyan-fg">Model.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, endog, exog, **kwargs)</span>
-<span class="ansi-green-fg">     93</span> missing <span style="color: rgb(98,98,98)">=</span> kwargs<span style="color: rgb(98,98,98)">.</span>pop(<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">missing</span><span style="color: rgb(175,0,0)">&#39;</span>, <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">none</span><span style="color: rgb(175,0,0)">&#39;</span>)
-<span class="ansi-green-fg">     94</span> hasconst <span style="color: rgb(98,98,98)">=</span> kwargs<span style="color: rgb(98,98,98)">.</span>pop(<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">hasconst</span><span style="color: rgb(175,0,0)">&#39;</span>, <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>)
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 95</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>data <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_handle_data</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg">,</span>
-<span class="ansi-green-fg">     96</span> <span class="ansi-yellow-bg">                              </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">     97</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>k_constant <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>data<span style="color: rgb(98,98,98)">.</span>k_constant
-<span class="ansi-green-fg">     98</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>exog <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>data<span style="color: rgb(98,98,98)">.</span>exog
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\base\model.py:135</span>, in <span class="ansi-cyan-fg">Model._handle_data</span><span class="ansi-blue-intense-fg ansi-bold">(self, endog, exog, missing, hasconst, **kwargs)</span>
-<span class="ansi-green-fg">    134</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span> <span style="color: rgb(0,0,255)">_handle_data</span>(<span style="color: rgb(0,135,0)">self</span>, endog, exog, missing, hasconst, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs):
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 135</span>     data <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">handle_data</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">    136</span>     <span style="color: rgb(95,135,135)"># kwargs arrays could have changed, easier to just attach here</span>
-<span class="ansi-green-fg">    137</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> key <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> kwargs:
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Results for Model 5:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.1001
+Estimator:                     PanelOLS   R-squared (Between):             -1.8759
+No. Observations:                   170   R-squared (Within):               0.1968
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -0.0209
+Time:                          05:07:31   Log-likelihood                    238.14
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      2.3365
+Entities:                            34   P-value                           0.0357
+Avg Obs:                         5.0000   Distribution:                   F(6,126)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):             5.4047
+                                          P-value                           0.0001
+Time periods:                         5   Distribution:                   F(6,126)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                    Parameter Estimates                                     
+============================================================================================
+                          Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+--------------------------------------------------------------------------------------------
+const                        0.4198     0.3846     1.0916     0.2771     -0.3413      1.1808
+conc_weig_basicpdpd_c4       0.3038     0.0756     4.0176     0.0001      0.1542      0.4534
+laghershf_firm_tot           0.0874     0.4654     0.1877     0.8514     -0.8337      1.0085
+lagunemploymentrate         -0.0072     0.0106    -0.6764     0.5000     -0.0281      0.0138
+mean_weig_reg_vintage       -0.0712     0.0658    -1.0823     0.2812     -0.2013      0.0590
+mean_weig_reg_pharmacies -1.754e-05     0.0001    -0.1352     0.8927     -0.0003      0.0002
+mean_weig_reg_drugs         -0.2920     0.3515    -0.8306     0.4078     -0.9876      0.4037
+============================================================================================
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\base\data.py:675</span>, in <span class="ansi-cyan-fg">handle_data</span><span class="ansi-blue-intense-fg ansi-bold">(endog, exog, missing, hasconst, **kwargs)</span>
-<span class="ansi-green-fg">    672</span>     exog <span style="color: rgb(98,98,98)">=</span> np<span style="color: rgb(98,98,98)">.</span>asarray(exog)
-<span class="ansi-green-fg">    674</span> klass <span style="color: rgb(98,98,98)">=</span> handle_data_class_factory(endog, exog)
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 675</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">klass</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">endog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">missing</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg">,</span>
-<span class="ansi-green-fg">    676</span> <span class="ansi-yellow-bg">             </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+F-test for Poolability: 2.0063
+P-value: 0.0024
+Distribution: F(37,126)
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\base\data.py:88</span>, in <span class="ansi-cyan-fg">ModelData.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, endog, exog, missing, hasconst, **kwargs)</span>
-<span class="ansi-green-fg">     86</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>const_idx <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>
-<span class="ansi-green-fg">     87</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>k_constant <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(98,98,98)">0</span>
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 88</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_handle_constant</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">hasconst</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">     89</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_check_integrity()
-<span class="ansi-green-fg">     90</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_cache <span style="color: rgb(98,98,98)">=</span> {}
+Included effects: Entity, Time
+Results for Model 6:
+                           PanelOLS Estimation Summary                            
+==================================================================================
+Dep. Variable:     logmean_w_reg_bpr_ch   R-squared:                        0.3910
+Estimator:                     PanelOLS   R-squared (Between):             -27.230
+No. Observations:                   170   R-squared (Within):              -0.1960
+Date:                  Mon, Feb 26 2024   R-squared (Overall):             -3.0361
+Time:                          05:07:31   Log-likelihood                    271.33
+Cov. Estimator:               Clustered                                           
+                                          F-statistic:                      1.5312
+Entities:                            34   P-value                           0.0494
+Avg Obs:                         5.0000   Distribution:                   F(39,93)
+Min Obs:                         5.0000                                           
+Max Obs:                         5.0000   F-statistic (robust):         -5.539e+15
+                                          P-value                           1.0000
+Time periods:                         5   Distribution:                   F(39,93)
+Avg Obs:                         34.000                                           
+Min Obs:                         34.000                                           
+Max Obs:                         34.000                                           
+                                                                                  
+                                    Parameter Estimates                                     
+============================================================================================
+                          Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+--------------------------------------------------------------------------------------------
+const                        0.3448     0.5977     0.5769     0.5654     -0.8421      1.5317
+conc_weig_basicpdpd_c4       0.3519     0.1400     2.5131     0.0137      0.0738      0.6299
+laghershf_firm_tot          -0.0655     0.7224    -0.0907     0.9280     -1.5001      1.3691
+lagunemploymentrate         -0.0234     0.0243    -0.9639     0.3376     -0.0715      0.0248
+mean_weig_reg_vintage       -0.0545     0.1026    -0.5309     0.5967     -0.2582      0.1493
+mean_weig_reg_pharmacies    -0.0001     0.0002    -0.6425     0.5221     -0.0004      0.0002
+mean_weig_reg_drugs         -0.2927     0.4754    -0.6158     0.5396     -1.2368      0.6513
+ttrend1                      0.0451     0.0195     2.3136     0.0229      0.0064      0.0837
+ttrend2                      0.0471     0.0268     1.7562     0.0824     -0.0062      0.1005
+ttrend3                      0.0977     0.0236     4.1431     0.0001      0.0509      0.1446
+ttrend4                      0.0561     0.0307     1.8279     0.0708     -0.0048      0.1170
+ttrend5                      0.0676     0.0242     2.7972     0.0063      0.0196      0.1157
+ttrend6                      0.0671     0.0214     3.1378     0.0023      0.0246      0.1096
+ttrend7                      0.0440     0.0212     2.0744     0.0408      0.0019      0.0861
+ttrend8                      0.0593     0.0341     1.7389     0.0854     -0.0084      0.1270
+ttrend9                      0.0730     0.0316     2.3126     0.0229      0.0103      0.1357
+ttrend10                     0.0736     0.0287     2.5613     0.0120      0.0165      0.1306
+ttrend11                     0.0839     0.0485     1.7291     0.0871     -0.0124      0.1802
+ttrend12                     0.0638     0.0302     2.1149     0.0371      0.0039      0.1237
+ttrend13                     0.0863     0.0349     2.4741     0.0152      0.0170      0.1555
+ttrend14                     0.0312     0.0248     1.2586     0.2113     -0.0180      0.0805
+ttrend15                     0.0403     0.0258     1.5641     0.1212     -0.0109      0.0916
+ttrend16                     0.0270     0.0195     1.3820     0.1703     -0.0118      0.0658
+ttrend17                     0.0651     0.0339     1.9170     0.0583     -0.0023      0.1325
+ttrend18                     0.0416     0.0294     1.4167     0.1599     -0.0167      0.1000
+ttrend19                     0.0744     0.0239     3.1135     0.0025      0.0270      0.1219
+ttrend20                     0.0520     0.0219     2.3710     0.0198      0.0084      0.0955
+ttrend21                     0.1057     0.0207     5.1003     0.0000      0.0645      0.1468
+ttrend22                     0.0800     0.0231     3.4600     0.0008      0.0341      0.1258
+ttrend23                     0.0830     0.0162     5.1199     0.0000      0.0508      0.1152
+ttrend24                     0.0543     0.0237     2.2858     0.0245      0.0071      0.1014
+ttrend25                     0.0285     0.0234     1.2172     0.2266     -0.0180      0.0751
+ttrend26                     0.0521     0.0224     2.3295     0.0220      0.0077      0.0965
+ttrend27                     0.0932     0.0293     3.1762     0.0020      0.0349      0.1514
+ttrend28                     0.0499     0.0421     1.1856     0.2388     -0.0337      0.1334
+ttrend29                     0.1025     0.0531     1.9303     0.0566     -0.0029      0.2080
+ttrend30                     0.0189     0.0275     0.6889     0.4926     -0.0356      0.0735
+ttrend31                     0.0250     0.0352     0.7107     0.4790     -0.0449      0.0949
+ttrend32                     0.0730     0.0421     1.7317     0.0866     -0.0107      0.1566
+ttrend33                     0.0969     0.0276     3.5074     0.0007      0.0420      0.1517
+============================================================================================
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\statsmodels\base\data.py:132</span>, in <span class="ansi-cyan-fg">ModelData._handle_constant</span><span class="ansi-blue-intense-fg ansi-bold">(self, hasconst)</span>
-<span class="ansi-green-fg">    129</span> <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
-<span class="ansi-green-fg">    130</span>     <span style="color: rgb(95,135,135)"># detect where the constant is</span>
-<span class="ansi-green-fg">    131</span>     check_implicit <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">False</span>
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 132</span>     exog_max <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">np</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">max</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">exog</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">axis</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">0</span><span class="ansi-yellow-bg">)</span>
-<span class="ansi-green-fg">    133</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> np<span style="color: rgb(98,98,98)">.</span>isfinite(exog_max)<span style="color: rgb(98,98,98)">.</span>all():
-<span class="ansi-green-fg">    134</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> MissingDataError(<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">exog contains inf or nans</span><span style="color: rgb(175,0,0)">&#39;</span>)
+F-test for Poolability: 1.9337
+P-value: 0.0058
+Distribution: F(37,93)
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\numpy\core\fromnumeric.py:2810</span>, in <span class="ansi-cyan-fg">max</span><span class="ansi-blue-intense-fg ansi-bold">(a, axis, out, keepdims, initial, where)</span>
-<span class="ansi-green-fg">   2692</span> <span style="color: rgb(175,0,255)">@array_function_dispatch</span>(_max_dispatcher)
-<span class="ansi-green-fg">   2693</span> <span style="color: rgb(175,0,255)">@set_module</span>(<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">numpy</span><span style="color: rgb(175,0,0)">&#39;</span>)
-<span class="ansi-green-fg">   2694</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span> <span style="color: rgb(0,0,255)">max</span>(a, axis<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">None</span>, out<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">None</span>, keepdims<span style="color: rgb(98,98,98)">=</span>np<span style="color: rgb(98,98,98)">.</span>_NoValue, initial<span style="color: rgb(98,98,98)">=</span>np<span style="color: rgb(98,98,98)">.</span>_NoValue,
-<span class="ansi-green-fg">   2695</span>          where<span style="color: rgb(98,98,98)">=</span>np<span style="color: rgb(98,98,98)">.</span>_NoValue):
-<span class="ansi-green-fg">   2696</span> <span style="color: rgb(188,188,188)">    </span><span style="color: rgb(175,0,0)">&#34;&#34;&#34;</span>
-<span class="ansi-green-fg">   2697</span> <span style="color: rgb(175,0,0)">    Return the maximum of an array or maximum along an axis.</span>
-<span class="ansi-green-fg">   2698</span> 
-<span class="ansi-green-intense-fg ansi-bold">   (...)</span>
-<span class="ansi-green-fg">   2808</span> <span style="color: rgb(175,0,0)">    5</span>
-<span class="ansi-green-fg">   2809</span> <span style="color: rgb(175,0,0)">    &#34;&#34;&#34;</span>
-<span class="ansi-green-intense-fg ansi-bold">-&gt; 2810</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">_wrapreduction</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">a</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">np</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">maximum</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#39;</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">max</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#39;</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">axis</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(0,135,0)">None</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">out</span><span class="ansi-yellow-bg">,</span>
-<span class="ansi-green-fg">   2811</span> <span class="ansi-yellow-bg">                          </span><span class="ansi-yellow-bg">keepdims</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">keepdims</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">initial</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">initial</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">where</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">where</span><span class="ansi-yellow-bg">)</span>
+Included effects: Entity, Time
+</pre>
+</div>
+</div>
 
-File <span class="ansi-green-intense-fg ansi-bold">c:\Python311\Lib\site-packages\numpy\core\fromnumeric.py:88</span>, in <span class="ansi-cyan-fg">_wrapreduction</span><span class="ansi-blue-intense-fg ansi-bold">(obj, ufunc, method, axis, dtype, out, **kwargs)</span>
-<span class="ansi-green-fg">     85</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
-<span class="ansi-green-fg">     86</span>             <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> reduction(axis<span style="color: rgb(98,98,98)">=</span>axis, out<span style="color: rgb(98,98,98)">=</span>out, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>passkwargs)
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 88</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">ufunc</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">reduce</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">obj</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">axis</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">dtype</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">out</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">passkwargs</span><span class="ansi-yellow-bg">)</span>
+<div class="jp-OutputArea-child">
 
-<span class="ansi-red-intense-fg ansi-bold">ValueError</span>: zero-size array to reduction operation maximum which has no identity</pre>
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>C:\Users\Davis\AppData\Local\Temp\ipykernel_11192\1778736735.py:49: AbsorbingEffectWarning: 
+Variables have been fully absorbed and have removed from the regression:
+
+ttrend34
+
+  results = model.fit(cov_type=&#39;clustered&#39;, cluster_entity=True)
+</pre>
 </div>
 </div>
 
