@@ -1,0 +1,38 @@
+Exercise: Medicare Part D: Are Insurers Gaming the Low Income Subsidy Design?
+
+This section examples the work done by Francesco Decarolis. The study examines the strategic behaviors of insurers within the Medicare Part D program, specifically focusing on the manipulation of the Low-Income Subsidy (LIS) design to attract low-income enrollees. The instrumental variable used is the Medicare Advantage Prescription Drug (MA-PD) share in 2006, aiming to capture the insurers' incentives and feasibility for premium manipulation. This methodology allows for an in-depth understanding of the dynamics between subsidy design and premium setting strategies, providing evidence of the distortions in the Medicare Part D market caused by strategic insurer behaviors.
+
+Key Variables and Data Overview
+ \textbf{Independent Variable:} The concentration of the Low-Income Premium Subsidy Amount (LIPSA) weights in a given region and year 
+ \textbf{Dependent Variable:} The average basic premium of Medicare Part D plans 
+ \textbf{Instumental Variable:} The Medicare Advantage Prescription Drug (MA-PD) share in 2006 
+
+Reproduction Task: 
+Reproduce Table 7 which shows the 2SLS regression results for the analysis
+
+Estimation Tasks:
+1. OLS Regression: Estimate the impact of LIPSA weights on the average basic premium of Medicare Part D plans
+2. 2SLS Estimation with IV: Use the Medicare Advantage Prescription Drug (MA-PD) share in 2006 as an instrumental variable for LIPSA weights
+
+Empirical Results from the Study
+
+OLS Regression
+Part D Premium = 0.380 + 0.352*{LISPA Concentration} + \epsilon 
+
+First Stage Regression
+LISPA Concentration = -0.896 + 0.668*{2006 MA-PD Share} + \epsilon 
+
+Second Stage  Regression
+Part D Premium = 0.143 + 0.468*{LISPA Concentration} + \epsilon
+
+Unveiling Stories from the Data
+
+How does the Medicare Advantage Prescription Drug (MA-PD) share in 2006 relate to the concentration of the Low-Income Premium Subsidy Amount (LIPSA) weights, and what might be the underlying mechanisms?
+Explore the potential indirect pathways through which the Medicare Advantage Prescription Drug (MA-PD) share in 2006 might affect the average basic premium of Medicare Part D plans via the concentration of the Low-Income Premium Subsidy Amount (LIPSA) weights.
+Analyze the empirical evidence on the role of the concentration of the Low-Income Premium Subsidy Amount (LIPSA) weights in shaping the average basic premium of Medicare Part D plans. Reflect on the difference between OLS and 2SLS estimates.
+
+Interpreting Regression Results
+
+Considering the first-stage regression results, what does the coefficient of 0.668 indicate about the relationship between Settler Mortality and Institution Quality?
+How does the second-stage coefficient of 0.94 enhance our understanding of the impact of Institution Quality on GDP per capita?
+Reflect on the OLS results with a coefficient of 0.52. What does this tell us about the direct correlation between Institution Quality and GDP per capita without addressing endogeneity?
