@@ -33,6 +33,6 @@ Analyze the empirical evidence on the role of the concentration of the Low-Incom
 
 Interpreting Regression Results
 
-Considering the first-stage regression results, what does the coefficient of 0.668 indicate about the relationship between Settler Mortality and Institution Quality?
-How does the second-stage coefficient of 0.94 enhance our understanding of the impact of Institution Quality on GDP per capita?
-Reflect on the OLS results with a coefficient of 0.52. What does this tell us about the direct correlation between Institution Quality and GDP per capita without addressing endogeneity?
+Considering the first-stage regression results, what does the coefficient of 0.668 indicate about the relationship between 2006 MA-PD Share and LISPA Concentration?
+How does the second-stage coefficient of 0.468 enhance our understanding of the impact of LISPA Concentration on Part D Premiums?
+Reflect on the OLS results with a coefficient of 0.352. What does this tell us about the direct correlation between LISPA Concentration and Part D Premium without addressing endogeneity?
